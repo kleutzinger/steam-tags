@@ -12,6 +12,7 @@ all tags:
 
 todo: log guesses somewhere
 todo: scrape without an initial list of tags
+todo: add automated scraping (github action?, dokku predeploy?)
 """
 import random
 import sys
@@ -91,6 +92,17 @@ def scrape_search_page(tag_list: list[Tag]):
 
 
 def guess_tag():
+    put_html(
+        """
+        <script type="text/javascript">
+            (function () {
+                const cdn_script_url = 'https://cdn.jsdelivr.net/npm/kevbadge/kevbadge.js';
+                let kevbadge = document.createElement('script'); kevbadge.type = 'text/javascript'; kevbadge.async = true;
+                kevbadge.src = cdn_script_url;
+                let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(kevbadge, s);
+            })();
+        </script> """
+    )
     put_markdown(
         (
             f"[example search for tag 'Indie']({FULL_TAG_SEARCH_PAGE}) \n"
