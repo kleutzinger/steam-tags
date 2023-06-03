@@ -102,7 +102,6 @@ def guess_tag():
         tag0, tag1 = random.sample(all_tags, 2)
         more, less = (tag0, tag1) if tag0.num_games > tag1.num_games else (tag1, tag0)
         answer_name = None
-        answer_name = None
         while answer_name not in [tag0.name, tag1.name]:
             answer_name = radio(
                 "Which tag has more games on Steam?",
@@ -115,10 +114,10 @@ def guess_tag():
         choice = tag0 if answer_name == tag0.name else tag1
         not_choice = tag0 if choice == tag1 else tag1
         if choice == more:
-            toast(f"Correct: {choice} > {not_choice}", duration=5, position="right")
+            toast(f"Correct: {more} > {less}", duration=5, position="right")
         else:
             toast(
-                f"Incorrect! {choice} > {not_choice}",
+                f"Incorrect! {more} > {less}",
                 duration=5,
                 color="error",
                 position="right",
