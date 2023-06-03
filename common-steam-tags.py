@@ -27,7 +27,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 from pywebio import start_server
 from pywebio.output import *
 from pywebio.input import *
-from pywebio.session import run_js
+from pywebio.session import run_js, set_env
 
 STEAM_URL = "https://store.steampowered.com/tag/browse/"
 FULL_TAG_SEARCH_PAGE = "https://store.steampowered.com/search/?&category1=998&ndl=1&tags=492&ignore_preferences=1"
@@ -92,6 +92,7 @@ def scrape_search_page(tag_list: list[Tag]):
 
 
 def guess_tag():
+    set_env(title="Steam Tags Popularity Guesser")
     put_html(
         """
         <script type="text/javascript">
