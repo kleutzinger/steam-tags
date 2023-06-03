@@ -127,7 +127,6 @@ def guess_tag():
 
 
 def main():
-    print(sys.argv)
     if "s" in sys.argv:
         scrape_search_page(get_list_of_tags())
     else:
