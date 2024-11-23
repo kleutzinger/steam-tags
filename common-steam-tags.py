@@ -14,24 +14,20 @@ todo: log guesses somewhere
 todo: scrape without an initial list of tags
 todo: add automated scraping (github action?, dokku predeploy?)
 """
-import random
-import sys
-from dataclasses import dataclass, asdict
+
 import json
 import os
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.wait import WebDriverWait
+import random
+import sys
+from dataclasses import asdict, dataclass
 
+from bs4 import BeautifulSoup
 from pywebio import start_server
-from pywebio.output import *
-from pywebio.input import *
+from pywebio.input import radio
+from pywebio.output import output, put_html, put_markdown, toast
 from pywebio.session import run_js, set_env
 
-STEAM_URL = "https://store.steampowered.com/tag/browse/"
-FULL_TAG_SEARCH_PAGE = "https://store.steampowered.com/search/?&category1=998&ndl=1&tags=492&ignore_preferences=1"
-TAG_SEARCH_PAGE = "https://store.steampowered.com/search/?&category1=998&ndl=1"
+TAG_HTML_FILE = "./Steam Game Tags · SteamDB (11_22_2024 11：28：25 PM).html"
 
 
 @dataclass
@@ -53,7 +49,7 @@ def get_list_of_tags() -> list[Tag]:
     return output
 
 
-def dump_tag_jsonl(tag: Tag, json_file="steam-tags.jsonl"):
+def append_tag_jsonl(tag: Tag, json_file="steam-tags.jsonl"):
     with open(json_file, "a") as f:
         json.dump(asdict(tag), f)
         f.write("\n")
@@ -70,25 +66,43 @@ def get_seen_ids() -> set[str]:
     return set([t.id for t in list_of_tags])
 
 
-def scrape_search_page(tag_list: list[Tag]):
-    driver = webdriver.Chrome("/Users/MyUsername/Downloads/chromedriver")
-    TAG_SEARCH_PAGE = "https://store.steampowered.com/search/?&category1=998&ndl=1&ignore_preferences=1"
-    seen_ids = get_seen_ids()
-    for tag in tag_list:
-        if tag.id in seen_ids:
-            continue
-        url = TAG_SEARCH_PAGE + "&tags=" + str(tag.id)
-        driver.get(url)
-        num_el = WebDriverWait(driver, 4000).until(
-            EC.presence_of_element_located(
-                (By.CSS_SELECTOR, "#search_results_filtered_warning_persistent > div")
-            )
-        )
-        num_games = int(num_el.text.split(" ")[0].replace(",", ""))
-        tag.num_games = num_games
-        dump_tag_jsonl(tag)
-        seen_ids.add(tag.id)
-    driver.close()
+def scrape_search_page():
+    # use bs4 to parse TAG_HTML_FILE
+    with open(TAG_HTML_FILE, "r") as f:
+        soup = BeautifulSoup(f, "html.parser")
+        """
+        <div class="label" data-s="DRIVING">
+        <a class="btn btn-outline tag-color-6" href="/tag/1644/"><span aria-hidden="true">🚗 </span>Driving</a>
+        <span class="label-count">3067</span>
+        </div>
+        """
+        tags = soup.find_all("div", class_="label")
+        seen_ids = set()
+        tag_store = []
+        for tag in tags:
+            name = tag.find("a").text
+            name = " ".join(name.split(" ")[1:])  # rm emoji
+            url = tag.find("a")["href"]
+            num_games = int(tag.find("span", class_="label-count").text)
+            tag_id = url.split("/")[-2]
+            if tag_id in seen_ids:
+                continue
+            seen_ids.add(tag_id)
+            tag = Tag(name=name, id=tag_id, url=url, num_games=num_games)
+            tag_store.append(tag)
+        tag_store = sorted(tag_store, key=lambda x: x.name)
+        os.remove("steam-tags.jsonl")
+        for tag in tag_store:
+            append_tag_jsonl(tag)
+
+
+def biased_random_tags():
+    # choose two tags that tend to be close-ish in num_games
+    tags = list(read_tag_jsonl())
+    while True:
+        tag0, tag1 = random.sample(tags, 2)
+        if abs(tag0.num_games - tag1.num_games) < 1000:
+            return tag0, tag1
 
 
 def guess_tag():
@@ -106,7 +120,7 @@ def guess_tag():
     )
     put_markdown(
         (
-            f"[example search for tag 'Indie']({FULL_TAG_SEARCH_PAGE}) \n"
+            "[example search for tag 'Indie'](https://steamdb.info/tag/492/)\n"
             "(DLC, Software, are not included in the count)"
         )
     )
@@ -127,11 +141,11 @@ def guess_tag():
         choice = tag0 if answer_name == tag0.name else tag1
         not_choice = tag0 if choice == tag1 else tag1
         if choice == more:
-            toast(f"Correct: {more} > {less}", duration=5, position="right")
+            toast(f"Correct!!!: {more} > {less}", duration=10, position="right")
         else:
             toast(
                 f"Incorrect! {more} > {less}",
-                duration=5,
+                duration=10,
                 color="error",
                 position="right",
             )
@@ -140,7 +154,7 @@ def guess_tag():
 
 def main():
     if "s" in sys.argv:
-        scrape_search_page(get_list_of_tags())
+        scrape_search_page()
     else:
         start_server(
             guess_tag,
