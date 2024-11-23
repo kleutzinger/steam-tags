@@ -72,13 +72,13 @@ def get_seen_ids() -> set[str]:
 
 def scrape_search_page(tag_list: list[Tag]):
     driver = webdriver.Chrome("/Users/MyUsername/Downloads/chromedriver")
-    TAG_SEARCH_PAGE = "https://store.steampowered.com/search/?&category1=998&ndl=1&ignore_preferences=1"
+    TAG_SEARCH_PAGE = "https://steamdb.info/tags/"
     seen_ids = get_seen_ids()
+    driver.get(url)
     for tag in tag_list:
         if tag.id in seen_ids:
             continue
         url = TAG_SEARCH_PAGE + "&tags=" + str(tag.id)
-        driver.get(url)
         num_el = WebDriverWait(driver, 4000).until(
             EC.presence_of_element_located(
                 (By.CSS_SELECTOR, "#search_results_filtered_warning_persistent > div")
