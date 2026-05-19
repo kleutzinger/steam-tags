@@ -27,7 +27,7 @@ from pywebio.input import radio
 from pywebio.output import output, put_html, put_markdown, toast
 from pywebio.session import run_js, set_env
 
-TAG_HTML_FILE = "./Steam Game Tags · SteamDB (11_22_2024 11：28：25 PM).html"
+TAG_HTML_FILE = "./Steam Game Tags · SteamDB (5_19_2026 11：11：42 AM).html"
 
 
 @dataclass
